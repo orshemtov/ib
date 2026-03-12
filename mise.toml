@@ -1,0 +1,23 @@
+[tasks.sync]
+run = "uv sync --all-packages --all-groups"
+
+[tasks.fmt]
+run = "uv run ruff format . && uv run ruff check --fix ."
+
+[tasks.lint]
+run = "uv run ruff check ."
+
+[tasks.test]
+run = "uv run pytest tests/unit"
+
+[tasks."test:integration"]
+run = "uv run pytest -s -vv tests/integration"
+
+[tasks."test:integration-full"]
+run = "uv run pytest -s -vv tests/integration-full"
+
+[tasks."test:all"]
+run = "uv run pytest tests"
+
+[tasks.typecheck]
+run = "uv run ty check"

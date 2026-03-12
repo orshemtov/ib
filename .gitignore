@@ -1,0 +1,11 @@
+.env
+.venv/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+playwright-report/
+test-results/
+dist/
+build/
+gateway/clientportal.gw.zip

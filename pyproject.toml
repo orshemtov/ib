@@ -1,0 +1,69 @@
+[project]
+name = "ib-cli"
+version = "0.1.0"
+description = "Typer CLI for the Interactive Brokers Client Portal Web API"
+readme = "README.md"
+authors = [
+    { name = "Or Shemtov", email = "oriesh@icloud.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "ib-client",
+    "typer>=0.16.1,<0.17",
+]
+
+[project.scripts]
+ib = "ib_cli.main:main"
+
+[tool.uv.sources]
+ib-client = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.8.12,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.uv.workspace]
+members = [
+    "packages/ib-client",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2,<9",
+    "ruff>=0.12.11,<0.13",
+    "ty>=0.0.1a17,<0.1",
+]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra"
+testpaths = ["tests"]
+markers = [
+    "integration: tests that hit the real IB gateway/account",
+    "real_account: tests that require a live authenticated IB session",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "N",
+    "UP",
+    "B",
+    "A",
+    "C4",
+    "SIM",
+    "RUF",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.uv]
+package = true
