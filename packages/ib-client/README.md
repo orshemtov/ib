@@ -4,7 +4,7 @@ Typed async Python client for the Interactive Brokers Client Portal Web API.
 
 ### Features
 
-- Async HTTP client for account, portfolio, market data, options, orders, trades, scanners, and watchlists
+- Async HTTP client for account, portfolio, market data, FX conversion, options, orders, trades, scanners, watchlists, and read-only transaction history
 - Built-in websocket helpers for market data, live orders, PnL, and trades streams
 - Gateway download and startup helpers for the local IBKR Client Portal Gateway
 - Playwright-assisted login workflow with typed results and manual 2FA handoff
@@ -70,6 +70,75 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+FX conversion preview:
+
+```python
+import asyncio
+
+from ib_client import IBClient
+
+
+async def main() -> None:
+    async with IBClient() as client:
+        pair, request = await client.build_fx_conversion_request(
+            "ILS",
+            "USD",
+            1000,
+        )
+        preview = await client.preview_fx_conversion(request)
+        print(pair.model_dump(mode="json"))
+        print(preview.model_dump(mode="json"))
+
+
+asyncio.run(main())
+```
+
+Close a positive non-USD cash balance into USD:
+
+```python
+import asyncio
+
+from ib_client import IBClient
+
+
+async def main() -> None:
+    async with IBClient() as client:
+        preview = await client.preview_close_to_usd("ILS")
+        print(preview.model_dump(mode="json"))
+
+
+asyncio.run(main())
+```
+
+Transaction history visibility:
+
+```python
+import asyncio
+
+from ib_client import IBClient
+
+
+async def main() -> None:
+    async with IBClient() as client:
+        history = await client.get_account_transaction_history("265598", days=30)
+        print(history.model_dump(mode="json"))
+
+
+asyncio.run(main())
+```
+
+CLI examples:
+
+```bash
+uv run ib fx pairs USD
+uv run ib fx rate --source ILS --target USD
+uv run ib fx preview --source ILS --target USD --amount 1000
+uv run ib fx place --source ILS --target USD --amount 1000 --confirm
+uv run ib fx preview-close-to-usd ILS
+uv run ib transactions history 265598 --days 30
+uv run ib transactions funding 265598 --days 30
+```
+
 Environment variables:
 
 | Variable | Required | Default | Purpose |
@@ -99,3 +168,6 @@ Environment variables:
 - The package defaults to port `5001` because `5000` is commonly reserved on macOS.
 - SSL verification is disabled by default because the local gateway usually serves a self-signed certificate.
 - Order-related endpoints exist, but read-only flows are the safest default unless you explicitly intend to trade.
+- FX conversion uses `/iserver` endpoints and therefore requires an authenticated brokerage session.
+- `get_account_transaction_history()` and `transactions funding` are read-only visibility helpers built on `/pa/transactions`; they may surface transfers or funding-like rows, but they are not a guaranteed full funding ledger.
+- A common cash-management pattern is to sell `ILS` and buy `USD` after deposits, then sell `USD` and buy `ILS` before withdrawals. `build_fx_conversion_request("ILS", "USD", amount)` and `build_fx_conversion_request("USD", "ILS", amount)` now infer the correct side from the resolved pair symbol.

@@ -30,6 +30,8 @@ portfolio_app = typer.Typer(help="Portfolio detail commands")
 orders_app = typer.Typer(help="Order commands")
 trades_app = typer.Typer(help="Trade and execution commands")
 scanner_app = typer.Typer(help="Scanner commands")
+fx_app = typer.Typer(help="Foreign exchange and currency conversion commands")
+transactions_app = typer.Typer(help="Transaction history commands")
 watchlists_app = typer.Typer(help="Watchlist commands")
 ws_app = typer.Typer(help="Websocket commands")
 
@@ -43,6 +45,8 @@ app.add_typer(portfolio_app, name="portfolio")
 app.add_typer(orders_app, name="orders")
 app.add_typer(trades_app, name="trades")
 app.add_typer(scanner_app, name="scanner")
+app.add_typer(fx_app, name="fx")
+app.add_typer(transactions_app, name="transactions")
 app.add_typer(watchlists_app, name="watchlists")
 app.add_typer(ws_app, name="ws")
 
@@ -275,6 +279,165 @@ def market_history(
                 outside_rth=outside_rth,
             )
             _print_json(history.model_dump(mode="json"))
+
+    _run(_command())
+
+
+@fx_app.command("pairs")
+def fx_pairs(currency: str) -> None:
+    settings = _settings()
+
+    async def _command() -> None:
+        async with _client(settings) as client:
+            pairs = await client.list_currency_pairs(currency)
+            _print_json([pair.model_dump(mode="json") for pair in pairs])
+
+    _run(_command())
+
+
+@fx_app.command("rate")
+def fx_rate(
+    source: str = typer.Option(...),
+    target: str = typer.Option(...),
+) -> None:
+    settings = _settings()
+
+    async def _command() -> None:
+        async with _client(settings) as client:
+            rate = await client.get_exchange_rate(source, target)
+            _print_json(rate.model_dump(mode="json"))
+
+    _run(_command())
+
+
+@fx_app.command("preview")
+def fx_preview(
+    source: str = typer.Option(...),
+    target: str = typer.Option(...),
+    amount: float = typer.Option(...),
+    account_id: str | None = typer.Option(default=None),
+    order_type: str = typer.Option("MKT", "--order-type"),
+    tif: str = typer.Option("DAY"),
+    price: float | None = typer.Option(default=None),
+) -> None:
+    settings = _settings()
+
+    async def _command() -> None:
+        async with _client(settings) as client:
+            pair, request = await client.build_fx_conversion_request(
+                source,
+                target,
+                amount,
+                account_id=account_id,
+                order_type=order_type,
+                tif=tif,
+                price=price,
+            )
+            preview = await client.preview_fx_conversion(request)
+            _print_json(
+                {
+                    "pair": pair.model_dump(mode="json"),
+                    "request": request.model_dump(mode="json", by_alias=True),
+                    "preview": preview.model_dump(mode="json"),
+                }
+            )
+
+    _run(_command())
+
+
+@fx_app.command("place")
+def fx_place(
+    source: str = typer.Option(...),
+    target: str = typer.Option(...),
+    amount: float = typer.Option(...),
+    account_id: str | None = typer.Option(default=None),
+    order_type: str = typer.Option("MKT", "--order-type"),
+    tif: str = typer.Option("DAY"),
+    price: float | None = typer.Option(default=None),
+    confirm: bool = typer.Option(False, help="Required to send the FX conversion request."),
+) -> None:
+    settings = _settings()
+    if not confirm:
+        raise typer.BadParameter("Pass --confirm to send the FX conversion request.")
+
+    async def _command() -> None:
+        async with _client(settings) as client:
+            pair, request = await client.build_fx_conversion_request(
+                source,
+                target,
+                amount,
+                account_id=account_id,
+                order_type=order_type,
+                tif=tif,
+                price=price,
+            )
+            placed = await client.place_fx_conversion(request)
+            _print_json(
+                {
+                    "pair": pair.model_dump(mode="json"),
+                    "request": request.model_dump(mode="json", by_alias=True),
+                    "placed": placed.model_dump(mode="json"),
+                }
+            )
+
+    _run(_command())
+
+
+@fx_app.command("preview-close-to-usd")
+def fx_preview_close_to_usd(
+    currency: str,
+    account_id: str | None = typer.Option(default=None),
+    amount: float | None = typer.Option(default=None),
+    min_cash_balance: float = typer.Option(1.0, "--min-cash-balance"),
+    order_type: str = typer.Option("MKT", "--order-type"),
+    tif: str = typer.Option("DAY"),
+    price: float | None = typer.Option(default=None),
+) -> None:
+    settings = _settings()
+
+    async def _command() -> None:
+        async with _client(settings) as client:
+            preview = await client.preview_close_to_usd(
+                currency,
+                account_id=account_id,
+                amount=amount,
+                min_cash_balance=min_cash_balance,
+                order_type=order_type,
+                tif=tif,
+                price=price,
+            )
+            _print_json(preview.model_dump(mode="json"))
+
+    _run(_command())
+
+
+@fx_app.command("place-close-to-usd")
+def fx_place_close_to_usd(
+    currency: str,
+    account_id: str | None = typer.Option(default=None),
+    amount: float | None = typer.Option(default=None),
+    min_cash_balance: float = typer.Option(1.0, "--min-cash-balance"),
+    order_type: str = typer.Option("MKT", "--order-type"),
+    tif: str = typer.Option("DAY"),
+    price: float | None = typer.Option(default=None),
+    confirm: bool = typer.Option(False, help="Required to send the FX close request."),
+) -> None:
+    settings = _settings()
+    if not confirm:
+        raise typer.BadParameter("Pass --confirm to send the FX close request.")
+
+    async def _command() -> None:
+        async with _client(settings) as client:
+            placed = await client.place_close_to_usd(
+                currency,
+                account_id=account_id,
+                amount=amount,
+                min_cash_balance=min_cash_balance,
+                order_type=order_type,
+                tif=tif,
+                price=price,
+            )
+            _print_json(placed.model_dump(mode="json"))
 
     _run(_command())
 
@@ -537,6 +700,50 @@ def trades_list() -> None:
         async with _client(settings) as client:
             trades = await client.list_trades()
             _print_json([trade.model_dump(mode="json") for trade in trades])
+
+    _run(_command())
+
+
+@transactions_app.command("history")
+def transactions_history(
+    conid: str,
+    account_id: str | None = typer.Option(default=None),
+    currency: str = typer.Option("USD"),
+    days: int | None = typer.Option(default=None),
+) -> None:
+    settings = _settings()
+
+    async def _command() -> None:
+        async with _client(settings) as client:
+            history = await client.get_account_transaction_history(
+                conid,
+                account_id=account_id,
+                currency=currency,
+                days=days,
+            )
+            _print_json(history.model_dump(mode="json"))
+
+    _run(_command())
+
+
+@transactions_app.command("funding")
+def transactions_funding(
+    conid: str,
+    account_id: str | None = typer.Option(default=None),
+    currency: str = typer.Option("USD"),
+    days: int | None = typer.Option(default=None),
+) -> None:
+    settings = _settings()
+
+    async def _command() -> None:
+        async with _client(settings) as client:
+            transactions = await client.list_funding_transactions(
+                conid,
+                account_id=account_id,
+                currency=currency,
+                days=days,
+            )
+            _print_json([transaction.model_dump(mode="json") for transaction in transactions])
 
     _run(_command())
 

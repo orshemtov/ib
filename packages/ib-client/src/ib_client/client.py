@@ -11,6 +11,15 @@ from ib_client.http import HTTPClient
 from ib_client.logger import get_logger
 from ib_client.models.account import Account, AccountSummary, Position, ProfitAndLoss
 from ib_client.models.history import HistoricalDataResponse
+from ib_client.models.fx import (
+    CurrencyPair,
+    ExchangeRate,
+    FXCloseToUSDPlacement,
+    FXCloseToUSDPlan,
+    FXCloseToUSDPreview,
+    FXConversionRequest,
+    ResolvedCurrencyPair,
+)
 from ib_client.models.market import ContractSearchResult, MarketSnapshot
 from ib_client.models.options import (
     ContractRule,
@@ -27,6 +36,11 @@ from ib_client.models.order import (
 )
 from ib_client.models.portfolio import ComboPosition, LedgerEntry
 from ib_client.models.session import AuthenticationStatus, TickleResponse
+from ib_client.models.transactions import (
+    TransactionHistoryRequest,
+    TransactionHistoryResponse,
+    TransactionRecord,
+)
 from ib_client.models.trading import OrderStatus, ScannerParameters, ScannerResult, Trade, Watchlist
 from ib_client.settings import Settings, build_settings
 from ib_client.websocket import WebsocketClient
@@ -180,6 +194,118 @@ class IBClient:
         payload = await self.http.get_json("/iserver/secdef/search", params={"symbol": symbol})
         return TypeAdapter(list[ContractSearchResult]).validate_python(payload)
 
+    async def list_currency_pairs(self, currency: str) -> list[CurrencyPair]:
+        requested_currency = currency.upper()
+        payload = await self.http.get_json(
+            "/iserver/currency/pairs",
+            params={"currency": requested_currency},
+        )
+        if not isinstance(payload, dict):
+            raise TypeError("Expected /iserver/currency/pairs to return a dict")
+        pair_payload = payload.get(requested_currency, [])
+        if not isinstance(pair_payload, list):
+            raise TypeError("Expected requested currency pair payload to be a list")
+        return [
+            CurrencyPair.model_validate({"requested_currency": requested_currency, **entry})
+            for entry in pair_payload
+        ]
+
+    async def get_exchange_rate(self, source_currency: str, target_currency: str) -> ExchangeRate:
+        source = source_currency.upper()
+        target = target_currency.upper()
+        payload = await self.http.get_json(
+            "/iserver/exchangerate",
+            params={"source": source, "target": target},
+        )
+        if not isinstance(payload, dict):
+            raise TypeError("Expected /iserver/exchangerate to return a dict")
+        return ExchangeRate.model_validate(
+            {
+                "source_currency": source,
+                "target_currency": target,
+                **payload,
+            }
+        )
+
+    async def resolve_currency_pair(
+        self,
+        source_currency: str,
+        target_currency: str,
+    ) -> ResolvedCurrencyPair:
+        source = source_currency.upper()
+        target = target_currency.upper()
+        requested_currencies = [target]
+        if source != target:
+            requested_currencies.append(source)
+
+        direct_symbol = f"{target}.{source}"
+        inverse_symbol = f"{source}.{target}"
+
+        for requested_currency in requested_currencies:
+            pairs = await self.list_currency_pairs(requested_currency)
+            for pair in pairs:
+                if pair.symbol == direct_symbol and pair.conid is not None:
+                    return ResolvedCurrencyPair(
+                        source_currency=source,
+                        target_currency=target,
+                        symbol=direct_symbol,
+                        conid=pair.conid,
+                        is_inverse=False,
+                    )
+            for pair in pairs:
+                if pair.symbol == inverse_symbol and pair.conid is not None:
+                    return ResolvedCurrencyPair(
+                        source_currency=source,
+                        target_currency=target,
+                        symbol=inverse_symbol,
+                        conid=pair.conid,
+                        is_inverse=True,
+                    )
+
+        raise ValueError(f"No currency pair found for {source}/{target}")
+
+    def _fx_conversion_side(
+        self,
+        pair: ResolvedCurrencyPair,
+        source_currency: str,
+        target_currency: str,
+    ) -> str:
+        source = source_currency.upper()
+        target = target_currency.upper()
+        if pair.symbol == f"{source}.{target}":
+            return "SELL"
+        if pair.symbol == f"{target}.{source}":
+            return "BUY"
+        raise ValueError(f"Resolved pair {pair.symbol} does not match {source}/{target}")
+
+    async def build_fx_conversion_request(
+        self,
+        source_currency: str,
+        target_currency: str,
+        amount: float,
+        *,
+        account_id: str | None = None,
+        order_type: str = "MKT",
+        tif: str = "DAY",
+        price: float | None = None,
+    ) -> tuple[ResolvedCurrencyPair, FXConversionRequest]:
+        resolved_account_id = account_id or await self.resolve_account_id()
+        pair = await self.resolve_currency_pair(source_currency, target_currency)
+        side = self._fx_conversion_side(pair, source_currency, target_currency)
+        request = FXConversionRequest.model_validate(
+            {
+                "acctId": resolved_account_id,
+                "conid": pair.conid,
+                "side": side,
+                "fxQty": amount,
+                "orderType": order_type,
+                "tif": tif,
+                "price": price,
+                "isCcyConv": True,
+            }
+        )
+        return pair, request
+
     async def lookup_stocks(self, symbols: list[str]) -> dict[str, list[StockLookupContract]]:
         payload = await self.http.get_json("/trsrv/stocks", params={"symbols": ",".join(symbols)})
         if not isinstance(payload, dict):
@@ -317,7 +443,21 @@ class IBClient:
         )
         return self._parse_order_response(payload)
 
+    async def preview_fx_conversion(self, request: FXConversionRequest) -> OrderResponseEnvelope:
+        payload = await self.http.post_json(
+            f"/iserver/account/{request.account_id}/orders/whatif",
+            json=request.to_payload(),
+        )
+        return self._parse_order_response(payload)
+
     async def place_order(self, request: OrderRequest) -> OrderResponseEnvelope:
+        payload = await self.http.post_json(
+            f"/iserver/account/{request.account_id}/orders",
+            json=request.to_payload(),
+        )
+        return self._parse_order_response(payload)
+
+    async def place_fx_conversion(self, request: FXConversionRequest) -> OrderResponseEnvelope:
         payload = await self.http.post_json(
             f"/iserver/account/{request.account_id}/orders",
             json=request.to_payload(),
@@ -336,6 +476,157 @@ class IBClient:
     async def list_trades(self) -> list[Trade]:
         payload = await self.http.get_json("/iserver/account/trades")
         return TypeAdapter(list[Trade]).validate_python(payload)
+
+    async def get_transaction_history(
+        self,
+        request: TransactionHistoryRequest,
+    ) -> TransactionHistoryResponse:
+        payload = await self.http.post_json("/pa/transactions", json=request.to_payload())
+        return TransactionHistoryResponse.model_validate(payload)
+
+    async def get_account_transaction_history(
+        self,
+        conid: str | int,
+        *,
+        account_id: str | None = None,
+        currency: str = "USD",
+        days: int | None = None,
+    ) -> TransactionHistoryResponse:
+        resolved_account_id = account_id or await self.resolve_account_id()
+        request = TransactionHistoryRequest.model_validate(
+            {
+                "acctIds": [resolved_account_id],
+                "conids": [conid],
+                "currency": currency.upper(),
+                "days": days,
+            }
+        )
+        return await self.get_transaction_history(request)
+
+    async def list_funding_transactions(
+        self,
+        conid: str | int,
+        *,
+        account_id: str | None = None,
+        currency: str = "USD",
+        days: int | None = None,
+    ) -> list[TransactionRecord]:
+        history = await self.get_account_transaction_history(
+            conid,
+            account_id=account_id,
+            currency=currency,
+            days=days,
+        )
+        matches: list[TransactionRecord] = []
+        for row in history.transactions:
+            haystack = " ".join(filter(None, [row.type, row.description])).lower()
+            if any(term in haystack for term in ("transfer", "deposit", "withdraw")):
+                matches.append(row)
+        return matches
+
+    async def plan_close_to_usd(
+        self,
+        currency: str,
+        *,
+        account_id: str | None = None,
+        amount: float | None = None,
+        min_cash_balance: float = 1.0,
+        order_type: str = "MKT",
+        tif: str = "DAY",
+        price: float | None = None,
+    ) -> FXCloseToUSDPlan:
+        target_currency = currency.upper()
+        if target_currency == "USD":
+            raise ValueError("USD is already the target currency")
+
+        resolved_account_id = account_id or await self.resolve_account_id()
+        ledger = await self.get_account_ledger(resolved_account_id)
+        entry = ledger.get(target_currency)
+        if entry is None or entry.cash_balance is None:
+            raise ValueError(f"No cash balance found for {target_currency}")
+
+        cash_balance = float(entry.cash_balance)
+        if cash_balance <= 0:
+            raise ValueError(
+                f"Cash balance for {target_currency} must be positive to close into USD"
+            )
+        close_amount = abs(cash_balance) if amount is None else amount
+        if close_amount <= 0:
+            raise ValueError("amount must be greater than zero")
+        if abs(cash_balance) < min_cash_balance:
+            raise ValueError(
+                f"Cash balance for {target_currency} is below min_cash_balance={min_cash_balance}"
+            )
+
+        pair, request = await self.build_fx_conversion_request(
+            target_currency,
+            "USD",
+            close_amount,
+            account_id=resolved_account_id,
+            order_type=order_type,
+            tif=tif,
+            price=price,
+        )
+        rate = await self.get_exchange_rate(target_currency, "USD")
+        return FXCloseToUSDPlan(
+            account_id=resolved_account_id,
+            currency=target_currency,
+            cash_balance=cash_balance,
+            source_currency=target_currency,
+            target_currency="USD",
+            pair_symbol=pair.symbol,
+            pair_conid=pair.conid,
+            side=request.side,
+            fx_quantity=close_amount,
+            estimated_rate=rate.rate,
+            request=request,
+        )
+
+    async def preview_close_to_usd(
+        self,
+        currency: str,
+        *,
+        account_id: str | None = None,
+        amount: float | None = None,
+        min_cash_balance: float = 1.0,
+        order_type: str = "MKT",
+        tif: str = "DAY",
+        price: float | None = None,
+    ) -> FXCloseToUSDPreview:
+        plan = await self.plan_close_to_usd(
+            currency,
+            account_id=account_id,
+            amount=amount,
+            min_cash_balance=min_cash_balance,
+            order_type=order_type,
+            tif=tif,
+            price=price,
+        )
+        preview = await self.preview_fx_conversion(plan.request)
+        return FXCloseToUSDPreview(plan=plan, preview=preview.model_dump(mode="json"))
+
+    async def place_close_to_usd(
+        self,
+        currency: str,
+        *,
+        account_id: str | None = None,
+        amount: float | None = None,
+        min_cash_balance: float = 1.0,
+        order_type: str = "MKT",
+        tif: str = "DAY",
+        price: float | None = None,
+    ) -> FXCloseToUSDPlacement:
+        plan = await self.plan_close_to_usd(
+            currency,
+            account_id=account_id,
+            amount=amount,
+            min_cash_balance=min_cash_balance,
+            order_type=order_type,
+            tif=tif,
+            price=price,
+        )
+        placed = await self.place_fx_conversion(plan.request)
+        return FXCloseToUSDPlacement(plan=plan, placed=placed.model_dump(mode="json"))
 
     async def get_scanner_parameters(self) -> ScannerParameters:
         payload = await self.http.get_json("/iserver/scanner/params")

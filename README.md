@@ -53,10 +53,17 @@ Typed Python workspace for the Interactive Brokers Client Portal Web API.
 - `uv run ib options strikes 265598 --month 202504`
 - `uv run ib options contracts 265598 202504 200 C`
 - `uv run ib options rules 265598`
+- `uv run ib fx pairs USD`
+- `uv run ib fx rate --source ILS --target USD`
+- `uv run ib fx preview --source ILS --target USD --amount 1000`
+- `uv run ib fx preview --source USD --target ILS --amount 1000`
+- `uv run ib fx preview-close-to-usd ILS`
 - `uv run ib orders list`
 - `uv run ib orders status 123456789`
 - `uv run ib orders cancel 123456789`
 - `uv run ib trades list`
+- `uv run ib transactions history 265598 --days 30`
+- `uv run ib transactions funding 265598 --days 30`
 - `uv run ib scanner params`
 - `uv run ib scanner run STK TOP_PERC_GAIN STK.US.MAJOR`
 - `uv run ib watchlists list`
@@ -97,6 +104,8 @@ Non-read-only tests should live under `tests/integration-full` and stay out of t
 - Portfolio detail: ledger and combo positions
 - Order lifecycle: status, modify, cancel, account switch
 - Trades/executions: recent trades listing
+- FX conversion: pairs, rates, preview/place conversion, close positive balances to USD
+- Read-only transaction history: PortfolioAnalyst transaction visibility plus funding-like filtering
 - Market discovery: scanner params and scanner runs
 - Watchlists: list, show, create
 - Typed websocket helpers: market data, live orders, PnL, and trades streams

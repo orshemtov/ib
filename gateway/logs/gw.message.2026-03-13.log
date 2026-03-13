@@ -1409,3 +1409,291 @@
 -> request: /sso/ping
 <- 401 GET /v1/api/iserver/accounts
 -> GET /sso/ping,200|736ms
+-> request: /sso/ping
+-> GET /sso/ping,200|1700ms
+-> request: /sso/ping
+-> GET /sso/ping,200|878ms
+-> request: /sso/ping
+-> GET /sso/ping,200|857ms
+-> request: /sso/ping
+-> GET /sso/ping,200|861ms
+-> request: /sso/ping
+-> GET /sso/ping,200|660ms
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /css/reg-am/login.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+-> GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+<- 200 GET /css/reg-am/login.min.css
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /sso/lib/xyz.bundle.min.js
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+-> GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+-> POST /sso/report
+-> POST /portal.proxy/v1/gstat/bulletins
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+-> GET /images/web/favicons/home-screen-icon-128x128.png
+<- 204 POST /portal.proxy/v1/gstat/bulletins
+<- 200 GET /images/web/favicons/home-screen-icon-128x128.png
+<- 200 POST /sso/report
+-> POST /sso/Authenticator
+-> POST /v1/api/iserver/auth/status
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 401 POST /v1/api/iserver/auth/status
+<- 200 POST /sso/Authenticator
+-> GET /fonts/proxima-nova/proximanova-extrabold.woff2
+<- 200 GET /fonts/proxima-nova/proximanova-extrabold.woff2
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /v1/api/iserver/auth/status
+<- 401 POST /v1/api/iserver/auth/status
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Dispatcher
+<- 302 POST /sso/Dispatcher
+-> request: /v1/api/sso/validate?gw=1
+-> GET /v1/api/sso/validate?gw=1,200|664ms
+-> request: /v1/api/one/user
+-> request: /v1/api/ssodh/init
+-> sso GET https://api.ibkr.com/v1/api/ssodh/init
+-> GET /v1/api/one/user,200|660ms
+-> POST /v1/api/iserver/auth/status
+<- 200 POST /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/accounts
+<- 400 GET /v1/api/iserver/accounts
+-> request: /v1/api/ssodh/st
+-> sso GET https://api.ibkr.com/v1/api/ssodh/st
+-> request: /v1/api/iserver/auth/status
+-> POST /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/auth/status,200|433ms
+-> request: /v1/api/iserver/auth/ssodh/init
+<- 200 POST /v1/api/iserver/auth/status
+-> POST https://api.ibkr.com/v1/api/iserver/auth/ssodh/init,200|3731ms
+-> request: /v1/api/iserver/accounts
+-> GET /v1/api/iserver/accounts,200|366ms
+-> POST /v1/api/iserver/auth/status
+<- 200 POST /v1/api/iserver/auth/status
+-> POST /v1/api/iserver/auth/status
+<- 200 POST /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/accounts
+-> GET /v1/api/portfolio/accounts
+<- 200 GET /v1/api/iserver/accounts
+-> GET /v1/api/portfolio/U6104114/summary
+<- 200 GET /v1/api/portfolio/accounts
+<- 200 GET /v1/api/portfolio/U6104114/summary
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|423ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|544ms
+-> GET /v1/api/iserver/accounts
+<- 200 GET /v1/api/iserver/accounts
+-> GET /v1/api/portfolio2/U6104114/positions
+<- 200 GET /v1/api/portfolio2/U6104114/positions
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|425ms
+-> GET /v1/api/iserver/accounts
+<- 200 GET /v1/api/iserver/accounts
+-> GET /v1/api/portfolio/U6104114/ledger
+<- 200 GET /v1/api/portfolio/U6104114/ledger
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|435ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|350ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|423ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|459ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|437ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|428ms
+-> request: /sso/ping
+-> GET /sso/ping,200|1604ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|317ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|433ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|378ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|405ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|452ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|439ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|488ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|343ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|305ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|431ms
+-> request: /sso/ping
+-> GET /sso/ping,200|676ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|1115ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|349ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|427ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|368ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|523ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|295ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|520ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|523ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|673ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|247ms
+-> request: /sso/ping
+-> GET /sso/ping,200|675ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|431ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|331ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|414ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|242ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|242ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|240ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|337ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|226ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|249ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|247ms
+-> request: /sso/ping
+-> GET /sso/ping,200|675ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|244ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|1185ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|470ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|391ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|477ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|1606ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|484ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|487ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|389ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|284ms
+-> request: /sso/ping
+-> GET /sso/ping,200|849ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|292ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|221ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|243ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|293ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|251ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|288ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|444ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|373ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|418ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|524ms
+-> request: /sso/ping
+-> GET /sso/ping,200|656ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|322ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|835ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|328ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|539ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|440ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|441ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|341ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|447ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|361ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|355ms
+-> request: /sso/ping
+-> GET /sso/ping,200|671ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|311ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|463ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|260ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|269ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|266ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|272ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|237ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|279ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|281ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|284ms
+-> request: /sso/ping
+-> GET /sso/ping,200|748ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|287ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|407ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|603ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|299ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|300ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|310ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|309ms

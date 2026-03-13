@@ -85,6 +85,16 @@ def _scanner_snapshot(entry: dict[str, object]) -> dict[str, object]:
     return {key: entry[key] for key in selected_keys if key in entry}
 
 
+def _fx_pair_snapshot(pair: dict[str, object]) -> dict[str, object]:
+    selected_keys = ["requested_currency", "symbol", "conid", "counter_currency"]
+    return {key: pair[key] for key in selected_keys if key in pair}
+
+
+def _transaction_snapshot(row: dict[str, object]) -> dict[str, object]:
+    selected_keys = ["date", "currency", "amount", "type", "description", "account_id"]
+    return {key: row[key] for key in selected_keys if key in row}
+
+
 @pytest.mark.anyio
 async def test_auth_status_smoke() -> None:
     async with IBClient(load_settings()) as client:
@@ -274,6 +284,73 @@ async def test_contract_search_smoke() -> None:
     assert isinstance(matches, list)
     assert len(matches) >= 1
     assert any(match.conid for match in matches)
+
+
+@pytest.mark.anyio
+async def test_fx_pairs_smoke() -> None:
+    async with IBClient(load_settings()) as client:
+        pairs = await client.list_currency_pairs("USD")
+
+    pairs_payload = [pair.model_dump(exclude_none=True) for pair in pairs]
+    _print_section("fx pairs", [_fx_pair_snapshot(pair) for pair in pairs_payload[:10]])
+    assert isinstance(pairs, list)
+    assert any(pair.conid for pair in pairs)
+
+
+@pytest.mark.anyio
+async def test_fx_exchange_rate_smoke() -> None:
+    async with IBClient(load_settings()) as client:
+        rate = await client.get_exchange_rate("EUR", "USD")
+
+    _print_section("fx exchange rate", rate.model_dump(exclude_none=True))
+    assert rate.rate is not None
+
+
+@pytest.mark.anyio
+async def test_fx_close_to_usd_preview_smoke() -> None:
+    async with IBClient(load_settings()) as client:
+        account_id = await client.resolve_account_id()
+        ledger = await client.get_account_ledger(account_id)
+        candidate_currency = next(
+            (
+                currency
+                for currency, entry in ledger.items()
+                if currency != "USD"
+                and entry.cash_balance is not None
+                and abs(float(entry.cash_balance)) >= 1.0
+            ),
+            None,
+        )
+        if candidate_currency is None:
+            pytest.skip("No non-USD cash balance available for FX close preview")
+        preview = await client.preview_close_to_usd(candidate_currency, account_id=account_id)
+
+    _print_section("fx close preview", preview.model_dump(exclude_none=True))
+    assert preview.plan.currency == candidate_currency
+    assert preview.preview
+
+
+@pytest.mark.anyio
+async def test_transaction_history_smoke() -> None:
+    async with IBClient(load_settings()) as client:
+        history = await client.get_account_transaction_history("265598", currency="USD", days=30)
+
+    history_payload = history.model_dump(exclude_none=True)
+    _print_section(
+        "transaction history",
+        [_transaction_snapshot(row) for row in history_payload.get("transactions", [])[:10]],
+    )
+    assert isinstance(history.transactions, list)
+
+
+@pytest.mark.anyio
+async def test_funding_transactions_smoke() -> None:
+    async with IBClient(load_settings()) as client:
+        transactions = await client.list_funding_transactions("265598", currency="USD", days=30)
+
+    payload = [transaction.model_dump(exclude_none=True) for transaction in transactions]
+    _print_section("funding transactions", [_transaction_snapshot(row) for row in payload[:10]])
+    assert isinstance(transactions, list)
 
 
 @pytest.mark.anyio

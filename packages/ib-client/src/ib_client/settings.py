@@ -125,7 +125,7 @@ def build_settings(
     }.items():
         if value is UNSET:
             continue
-        if key in {"gateway_dir", "gateway_config_path"} and value is not None:
+        if key in {"gateway_dir", "gateway_config_path"} and isinstance(value, str | Path):
             values[key] = Path(value)
             continue
         values[key] = value

@@ -26,7 +26,7 @@ Use this skill to work effectively with the `ib-client` Python package and the I
 - `ib_client.IBClient`: main async API surface for HTTP endpoints and websocket helpers
 - `ib_client.AuthWorkflow`: login flow with Playwright and manual 2FA handoff
 - `ib_client.GatewayManager`: gateway download, configuration, startup, and reachability helpers
-- `ib_client.models.*`: typed request and response models for account, market, options, orders, scanners, and watchlists
+- `ib_client.models.*`: typed request and response models for account, market, FX, options, orders, scanners, transactions, and watchlists
 
 ## If working in this repository
 
@@ -112,6 +112,20 @@ manager.start()
 - Use `lookup_stocks()`, `get_security_definition()`, `get_option_strikes()`, `get_option_contracts()`, and `get_contract_rules()` for options workflows.
 - Keep examples explicit about `conid`, month format, strike, and right.
 
+### FX and cash management
+
+- Use `list_currency_pairs()` and `get_exchange_rate()` for read-only FX discovery and quoting.
+- Use `build_fx_conversion_request()` plus `preview_fx_conversion()` before any live FX conversion.
+- When the user describes converting one cash balance into another, prefer `build_fx_conversion_request(source, target, amount)` instead of guessing the `BUY`/`SELL` side manually.
+- Common IBKR cash-management workflows include selling `ILS` to buy `USD` after deposits, and selling `USD` to buy `ILS` before withdrawals; the client now infers the correct side from the resolved pair symbol.
+- Use `preview_close_to_usd()` to flatten a positive non-USD cash balance into USD. This helper is intentionally conservative and does not try to automate negative-balance handling.
+
+### Transaction history
+
+- Use `get_account_transaction_history()` for read-only PortfolioAnalyst transaction visibility.
+- Use `list_funding_transactions()` only as a best-effort filter for transfer/deposit/withdrawal-like rows from `/pa/transactions`.
+- Be explicit that this is not a guaranteed full funding ledger; if the user needs authoritative funding history, say so.
+
 ### Streaming
 
 - Use `stream_market_data()`, `stream_live_orders()`, `stream_pnl()`, or `stream_trades()` instead of constructing websocket topics manually unless the task needs a custom topic.
@@ -129,6 +143,11 @@ manager.start()
 - Log in: `uv run ib auth login`
 - Fetch market history: `uv run ib market history <conid>`
 - Fetch option strikes: `uv run ib options strikes <conid> --month <yyyymm>`
+- List FX pairs: `uv run ib fx pairs USD`
+- Quote FX rate: `uv run ib fx rate --source ILS --target USD`
+- Preview FX conversion: `uv run ib fx preview --source ILS --target USD --amount 1000`
+- Preview close-to-USD: `uv run ib fx preview-close-to-usd ILS`
+- Read transaction history: `uv run ib transactions history <conid> --days 30`
 - Stream market data: `uv run ib ws market <conid>`
 
 ## Response shape
@@ -146,6 +165,9 @@ When producing code or implementation guidance:
 
 - "Fetch my account summary" -> `resolve_account_id()` then `get_account_summary()`
 - "Look up option chains or strikes" -> stock lookup, security definition, then strikes/contracts helpers
+- "Convert ILS to USD" -> `build_fx_conversion_request("ILS", "USD", amount)` then preview/place helpers
+- "Close my EUR/ILS balance to USD" -> `preview_close_to_usd()` or `place_close_to_usd()` with the target cash currency
+- "Show deposits/withdrawals" -> `get_account_transaction_history()` or `list_funding_transactions()` with a note that it is best-effort read-only visibility
 - "Start or download the gateway" -> `GatewayManager.download_latest()` or `GatewayManager.start()`
 - "Log in to IBKR" -> `AuthWorkflow(username=..., password=...).login()` with a note that 2FA is manual
 - "Stream live market data" -> `stream_market_data()` with conid and fields
