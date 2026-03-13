@@ -55,5 +55,5 @@ We will write a proper README.md with pre-requisites, installation instructions,
 - <https://docs.astral.sh/uv/concepts/projects/workspaces/#getting-started>
 - <https://github.com/mjpieters/aiolimiter>
 - <https://github.com/hynek/stamina>
-- <https://github.com/orshemtov/ib-client>
+- <https://github.com/orshemtov/ib/tree/main/packages/ib-client>
 - <https://docs.github.com/en/copilot/how-tos/copilot-cli/automate-copilot-cli/automate-with-actions>

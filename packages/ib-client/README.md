@@ -28,7 +28,7 @@ uv add ib-client
 From GitHub:
 
 ```bash
-uv add git+https://github.com/orshemtov/ib-client
+uv add git+https://github.com/orshemtov/ib#subdirectory=packages/ib-client
 ```
 
 From a local checkout:

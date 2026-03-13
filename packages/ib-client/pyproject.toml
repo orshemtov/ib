@@ -27,9 +27,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/orshemtov/ib-client"
-Repository = "https://github.com/orshemtov/ib-client"
-Issues = "https://github.com/orshemtov/ib-client/issues"
+Homepage = "https://github.com/orshemtov/ib/tree/main/packages/ib-client"
+Repository = "https://github.com/orshemtov/ib"
+Issues = "https://github.com/orshemtov/ib/issues"
 
 [build-system]
 requires = ["uv_build>=0.8.12,<0.9.0"]
