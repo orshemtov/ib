@@ -9,3 +9,4 @@ test-results/
 dist/
 build/
 gateway/clientportal.gw.zip
+gateway/logs
