@@ -7,8 +7,6 @@ from typing import Any
 
 import structlog
 
-from ib_client.settings import Settings
-
 
 def _as_bool(value: str | None) -> bool:
     if value is None:
@@ -31,16 +29,21 @@ def _drop_color_message_key(
     return event_dict
 
 
-def configure_logging(settings: Settings) -> None:
+def configure_logging(
+    *,
+    log_level: str = "INFO",
+    log_format: str = "plain",
+    log_color: str = "auto",
+) -> None:
     ci = _as_bool(os.getenv("CI"))
-    use_colors = should_use_colors(settings.log_color, ci)
+    use_colors = should_use_colors(log_color, ci)
     processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_log_level,
         _drop_color_message_key,
     ]
     renderer: Any
-    if settings.log_format == "json":
+    if log_format == "json":
         processors.insert(2, structlog.processors.TimeStamper(fmt="iso", utc=False))
         renderer = structlog.processors.JSONRenderer()
     else:
@@ -53,7 +56,7 @@ def configure_logging(settings: Settings) -> None:
         )
 
     logging.basicConfig(
-        level=getattr(logging, settings.log_level.upper(), logging.INFO),
+        level=getattr(logging, log_level.upper(), logging.INFO),
         format="%(message)s",
     )
     structlog.configure(

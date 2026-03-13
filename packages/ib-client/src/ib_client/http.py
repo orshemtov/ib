@@ -6,20 +6,36 @@ import httpx
 
 from ib_client.exceptions import HTTPRequestError
 from ib_client.logger import get_logger
-from ib_client.settings import Settings
+from ib_client.settings import base_url_for
 
 
 class HTTPClient:
-    def __init__(self, settings: Settings) -> None:
-        self.settings = settings
+    def __init__(
+        self,
+        *,
+        api_host: str = "localhost",
+        api_port: int = 5001,
+        use_ssl: bool = True,
+        verify_ssl: bool = False,
+        request_timeout_seconds: float = 30.0,
+    ) -> None:
+        self.api_host = api_host
+        self.api_port = api_port
+        self.use_ssl = use_ssl
+        self.verify_ssl = verify_ssl
+        self.request_timeout_seconds = request_timeout_seconds
         self._client: httpx.AsyncClient | None = None
         self._logger = get_logger("ib_client.http")
 
     async def __aenter__(self) -> HTTPClient:
         self._client = httpx.AsyncClient(
-            base_url=self.settings.base_url,
-            timeout=self.settings.request_timeout_seconds,
-            verify=self.settings.verify_ssl,
+            base_url=base_url_for(
+                api_host=self.api_host,
+                api_port=self.api_port,
+                use_ssl=self.use_ssl,
+            ),
+            timeout=self.request_timeout_seconds,
+            verify=self.verify_ssl,
         )
         return self
 

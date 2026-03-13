@@ -1,6 +1,12 @@
 [tasks.sync]
 run = "uv sync --all-packages --all-groups"
 
+[tasks.install]
+run = "uv tool install ."
+
+[tasks.upgrade]
+run = "uv tool install --reinstall ."
+
 [tasks.fmt]
 run = "uv run ruff format . && uv run ruff check --fix ."
 
@@ -21,3 +27,6 @@ run = "uv run pytest tests"
 
 [tasks.typecheck]
 run = "uv run ty check"
+
+[tasks.auth]
+run = "uv run ib auth login"

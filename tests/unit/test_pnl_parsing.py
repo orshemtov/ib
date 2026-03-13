@@ -1,9 +1,8 @@
 from ib_client.client import IBClient
-from ib_client.settings import Settings
 
 
 def test_parse_profit_and_loss_partitioned_payload() -> None:
-    client = IBClient(Settings())
+    client = IBClient()
 
     parsed = client._parse_profit_and_loss(
         {

@@ -1,6 +1,7 @@
 """Interactive Brokers Client Portal client package."""
 
 from ib_client.client import IBClient
-from ib_client.settings import Settings, load_settings
+from ib_client.auth import AuthWorkflow
+from ib_client.gateway import GatewayManager
 
-__all__ = ["IBClient", "Settings", "load_settings"]
+__all__ = ["AuthWorkflow", "GatewayManager", "IBClient"]

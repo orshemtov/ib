@@ -11,7 +11,7 @@ class AuthenticationStatus(IBModel):
     competing: bool | None = None
     message: str | None = None
     mac: str | None = Field(default=None, alias="MAC")
-    server_info: dict[str, str] | None = Field(default=None, alias="serverInfo")
+    server_info: dict[str, str | None] | None = Field(default=None, alias="serverInfo")
 
 
 class TickleResponse(IBModel):

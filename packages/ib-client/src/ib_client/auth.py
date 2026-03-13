@@ -9,14 +9,50 @@ from ib_client.exceptions import AuthenticationError
 from ib_client.gateway import GatewayManager
 from ib_client.logger import get_logger
 from ib_client.models.session import LoginResult
-from ib_client.settings import Settings
+from ib_client.settings import (
+    Settings,
+    build_settings,
+    client_kwargs_from_settings,
+    gateway_kwargs_from_settings,
+)
 
 
 class AuthWorkflow:
-    def __init__(self, settings: Settings) -> None:
-        self.settings = settings
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        *,
+        username: str | None = None,
+        password: str | None = None,
+        account_id: str | None = None,
+        gateway_dir: str | None = "gateway",
+        gateway_config_path: str | None = None,
+        api_host: str = "localhost",
+        api_port: int = 5001,
+        use_ssl: bool = True,
+        verify_ssl: bool = False,
+        request_timeout_seconds: float = 30.0,
+        tickle_interval_seconds: float = 60.0,
+        playwright_headless: bool = False,
+        playwright_timeout_seconds: float = 180.0,
+    ) -> None:
+        self.settings = settings or build_settings(
+            username=username,
+            password=password,
+            account_id=account_id,
+            gateway_dir=gateway_dir,
+            gateway_config_path=gateway_config_path,
+            api_host=api_host,
+            api_port=api_port,
+            use_ssl=use_ssl,
+            verify_ssl=verify_ssl,
+            request_timeout_seconds=request_timeout_seconds,
+            tickle_interval_seconds=tickle_interval_seconds,
+            playwright_headless=playwright_headless,
+            playwright_timeout_seconds=playwright_timeout_seconds,
+        )
         self.logger = get_logger("ib_client.auth")
-        self.gateway = GatewayManager(settings)
+        self.gateway = GatewayManager(**gateway_kwargs_from_settings(self.settings))
 
     async def login(self) -> LoginResult:
         gateway_started = False
@@ -32,7 +68,7 @@ class AuthWorkflow:
                 await self._fill_credentials(page)
                 browser_opened = True
 
-                async with IBClient(self.settings) as client:
+                async with IBClient(**client_kwargs_from_settings(self.settings)) as client:
                     status = await client.wait_for_authentication(
                         self.settings.playwright_timeout_seconds
                     )

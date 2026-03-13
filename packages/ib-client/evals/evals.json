@@ -1,0 +1,23 @@
+{
+  "skill_name": "ib-client",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a small async Python script that uses this package to look up AAPL, resolve the stock contract, and print the available option strikes for month 202504 without placing any orders.",
+      "expected_output": "A script that uses Settings and IBClient, follows the typed option lookup flow, and stays read-only.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I need a read-only smoke test for my authenticated IBKR session. Use pytest and this package to verify that account summary and ledger endpoints return structured data.",
+      "expected_output": "A tolerant integration-style pytest example that resolves the account ID and checks summary and ledger payload shapes without mocking.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Show me how to stream market data for conid 265598 with this package and log each message as JSON.",
+      "expected_output": "An async example using the built-in websocket streaming helper rather than a raw websocket implementation.",
+      "files": []
+    }
+  ]
+}

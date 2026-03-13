@@ -3,10 +3,20 @@ name = "ib-client"
 version = "0.1.0"
 description = "Typed Interactive Brokers Client Portal Web API client"
 readme = "README.md"
+license = { text = "MIT" }
 authors = [
     { name = "Or Shemtov", email = "oriesh@icloud.com" }
 ]
 requires-python = ">=3.13"
+keywords = ["interactive-brokers", "ibkr", "trading", "client-portal", "api"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
 dependencies = [
     "httpx>=0.28.1,<0.29",
     "playwright>=1.55.0,<2",
@@ -16,6 +26,14 @@ dependencies = [
     "websockets>=15.0.1,<16",
 ]
 
+[project.urls]
+Homepage = "https://github.com/orshemtov/ib-client"
+Repository = "https://github.com/orshemtov/ib-client"
+Issues = "https://github.com/orshemtov/ib-client/issues"
+
 [build-system]
 requires = ["uv_build>=0.8.12,<0.9.0"]
 build-backend = "uv_build"
+
+[tool.uv]
+package = true

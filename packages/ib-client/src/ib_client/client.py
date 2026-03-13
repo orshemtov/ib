@@ -10,23 +10,62 @@ from ib_client.exceptions import HTTPRequestError
 from ib_client.http import HTTPClient
 from ib_client.logger import get_logger
 from ib_client.models.account import Account, AccountSummary, Position, ProfitAndLoss
+from ib_client.models.history import HistoricalDataResponse
 from ib_client.models.market import ContractSearchResult, MarketSnapshot
+from ib_client.models.options import (
+    ContractRule,
+    OptionContract,
+    OptionStrikes,
+    SecurityDefinition,
+    StockLookupContract,
+)
 from ib_client.models.order import (
     LiveOrdersResponse,
     OrderRequest,
     OrderResponseEnvelope,
     OrderResponseItem,
 )
+from ib_client.models.portfolio import ComboPosition, LedgerEntry
 from ib_client.models.session import AuthenticationStatus, TickleResponse
-from ib_client.settings import Settings
+from ib_client.models.trading import OrderStatus, ScannerParameters, ScannerResult, Trade, Watchlist
+from ib_client.settings import Settings, build_settings
 from ib_client.websocket import WebsocketClient
 
 
 class IBClient:
-    def __init__(self, settings: Settings) -> None:
-        self.settings = settings
-        self.http = HTTPClient(settings)
-        self.websocket = WebsocketClient(settings)
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        *,
+        account_id: str | None = None,
+        api_host: str = "localhost",
+        api_port: int = 5001,
+        use_ssl: bool = True,
+        verify_ssl: bool = False,
+        request_timeout_seconds: float = 30.0,
+        tickle_interval_seconds: float = 60.0,
+    ) -> None:
+        self.settings = settings or build_settings(
+            account_id=account_id,
+            api_host=api_host,
+            api_port=api_port,
+            use_ssl=use_ssl,
+            verify_ssl=verify_ssl,
+            request_timeout_seconds=request_timeout_seconds,
+            tickle_interval_seconds=tickle_interval_seconds,
+        )
+        self.http = HTTPClient(
+            api_host=self.settings.api_host,
+            api_port=self.settings.api_port,
+            use_ssl=self.settings.use_ssl,
+            verify_ssl=self.settings.verify_ssl,
+            request_timeout_seconds=self.settings.request_timeout_seconds,
+        )
+        self.websocket = WebsocketClient(
+            api_host=self.settings.api_host,
+            api_port=self.settings.api_port,
+            use_ssl=self.settings.use_ssl,
+        )
         self.logger = get_logger("ib_client.client")
 
     async def __aenter__(self) -> IBClient:
@@ -121,9 +160,93 @@ class IBClient:
         payload = await self.http.get_json("/iserver/account/pnl/partitioned")
         return self._parse_profit_and_loss(payload)
 
+    async def get_account_ledger(self, account_id: str) -> dict[str, LedgerEntry]:
+        payload = await self.http.get_json(f"/portfolio/{account_id}/ledger")
+        if not isinstance(payload, dict):
+            raise TypeError("Expected /portfolio/{accountId}/ledger to return a dict")
+        return {currency: LedgerEntry.model_validate(entry) for currency, entry in payload.items()}
+
+    async def list_combo_positions(self, account_id: str) -> list[ComboPosition]:
+        payload = await self.http.get_json(f"/portfolio/{account_id}/combo/positions")
+        return TypeAdapter(list[ComboPosition]).validate_python(payload)
+
+    async def invalidate_positions(self, account_id: str) -> dict[str, Any]:
+        payload = await self.http.post_json(f"/portfolio/{account_id}/positions/invalidate")
+        if not isinstance(payload, dict):
+            raise TypeError("Expected positions invalidate response to be a dict")
+        return payload
+
     async def search_contract(self, symbol: str) -> list[ContractSearchResult]:
         payload = await self.http.get_json("/iserver/secdef/search", params={"symbol": symbol})
         return TypeAdapter(list[ContractSearchResult]).validate_python(payload)
+
+    async def lookup_stocks(self, symbols: list[str]) -> dict[str, list[StockLookupContract]]:
+        payload = await self.http.get_json("/trsrv/stocks", params={"symbols": ",".join(symbols)})
+        if not isinstance(payload, dict):
+            raise TypeError("Expected /trsrv/stocks to return a dict")
+        return {
+            symbol: TypeAdapter(list[StockLookupContract]).validate_python(items)
+            for symbol, items in payload.items()
+        }
+
+    async def get_security_definition(self, conids: list[str]) -> list[SecurityDefinition]:
+        payload = await self.http.get_json("/trsrv/secdef", params={"conids": ",".join(conids)})
+        secdef_payload = payload.get("secdef") if isinstance(payload, dict) else payload
+        return TypeAdapter(list[SecurityDefinition]).validate_python(secdef_payload)
+
+    async def get_option_strikes(
+        self,
+        conid: str,
+        sec_type: str,
+        month: str,
+        exchange: str | None = None,
+    ) -> OptionStrikes:
+        params = {"conid": conid, "sectype": sec_type, "month": month}
+        if exchange:
+            params["exchange"] = exchange
+        payload = await self.http.get_json("/iserver/secdef/strikes", params=params)
+        return OptionStrikes.model_validate(payload)
+
+    async def get_option_contracts(
+        self,
+        conid: str,
+        sec_type: str,
+        month: str,
+        strike: str,
+        right: str,
+        exchange: str | None = None,
+    ) -> list[OptionContract]:
+        params = {
+            "conid": conid,
+            "sectype": sec_type,
+            "month": month,
+            "strike": strike,
+            "right": right,
+        }
+        if exchange:
+            params["exchange"] = exchange
+        payload = await self.http.get_json("/iserver/secdef/info", params=params)
+        return TypeAdapter(list[OptionContract]).validate_python(payload)
+
+    async def get_contract_rules(
+        self,
+        conid: str,
+        is_buy: bool = True,
+        exchange: str | None = None,
+        modify_order: bool = False,
+        order_id: str | None = None,
+    ) -> ContractRule:
+        request_body: dict[str, Any] = {
+            "conid": conid,
+            "isBuy": is_buy,
+            "modifyOrder": modify_order,
+        }
+        if exchange:
+            request_body["exchange"] = exchange
+        if order_id:
+            request_body["orderId"] = order_id
+        payload = await self.http.post_json("/iserver/contract/rules", json=request_body)
+        return ContractRule.model_validate(payload)
 
     async def get_market_snapshot(
         self, conids: list[str], fields: list[str]
@@ -135,12 +258,57 @@ class IBClient:
         )
         return TypeAdapter(list[MarketSnapshot]).validate_python(payload)
 
+    async def get_historical_data(
+        self,
+        conid: str,
+        period: str = "1d",
+        bar: str = "1h",
+        exchange: str | None = None,
+        outside_rth: bool = False,
+    ) -> HistoricalDataResponse:
+        params = {
+            "conid": conid,
+            "period": period,
+            "bar": bar,
+            "outsideRth": str(outside_rth).lower(),
+        }
+        if exchange:
+            params["exchange"] = exchange
+        payload = await self.http.get_json("/iserver/marketdata/history", params=params)
+        return HistoricalDataResponse.model_validate(payload)
+
     async def list_live_orders(self, force: bool = False) -> LiveOrdersResponse:
         payload = await self.http.get_json(
             "/iserver/account/orders",
             params={"force": str(force).lower()},
         )
         return LiveOrdersResponse.model_validate(payload)
+
+    async def get_order_status(self, order_id: str) -> OrderStatus:
+        payload = await self.http.get_json(f"/iserver/account/order/status/{order_id}")
+        return OrderStatus.model_validate(payload)
+
+    async def modify_order(self, request: OrderRequest, order_id: str) -> OrderResponseEnvelope:
+        payload = await self.http.post_json(
+            f"/iserver/account/{request.account_id}/order/{order_id}",
+            json=request.to_payload(),
+        )
+        return self._parse_order_response(payload)
+
+    async def cancel_order(self, account_id: str, order_id: str) -> dict[str, Any]:
+        payload = await self.http.request_json(
+            "DELETE",
+            f"/iserver/account/{account_id}/order/{order_id}",
+        )
+        if not isinstance(payload, dict):
+            raise TypeError("Expected cancel order response to be a dict")
+        return payload
+
+    async def switch_account(self, account_id: str) -> dict[str, Any]:
+        payload = await self.http.post_json("/iserver/account", json={"acctId": account_id})
+        if not isinstance(payload, dict):
+            raise TypeError("Expected switch account response to be a dict")
+        return payload
 
     async def preview_order(self, request: OrderRequest) -> OrderResponseEnvelope:
         payload = await self.http.post_json(
@@ -164,6 +332,52 @@ class IBClient:
             json={"confirmed": confirmed},
         )
         return self._parse_order_response(payload)
+
+    async def list_trades(self) -> list[Trade]:
+        payload = await self.http.get_json("/iserver/account/trades")
+        return TypeAdapter(list[Trade]).validate_python(payload)
+
+    async def get_scanner_parameters(self) -> ScannerParameters:
+        payload = await self.http.get_json("/iserver/scanner/params")
+        return ScannerParameters.model_validate(payload)
+
+    async def run_scanner(
+        self,
+        instrument: str,
+        scan_type: str,
+        location: str,
+        filter_values: list[dict[str, Any]] | None = None,
+    ) -> list[ScannerResult]:
+        payload = await self.http.post_json(
+            "/iserver/scanner/run",
+            json={
+                "instrument": instrument,
+                "type": scan_type,
+                "location": location,
+                "filter": filter_values or [],
+            },
+        )
+        scanner_payload = payload.get("contracts") if isinstance(payload, dict) else payload
+        return TypeAdapter(list[ScannerResult]).validate_python(scanner_payload)
+
+    async def list_watchlists(self) -> list[Watchlist]:
+        payload = await self.http.get_json("/iserver/watchlists")
+        return TypeAdapter(list[Watchlist]).validate_python(payload)
+
+    async def get_watchlist(self, watchlist_id: str) -> Watchlist:
+        payload = await self.http.get_json("/iserver/watchlist", params={"id": watchlist_id})
+        return Watchlist.model_validate(payload)
+
+    async def create_watchlist(
+        self,
+        name: str,
+        rows: list[dict[str, Any]] | None = None,
+    ) -> Watchlist:
+        payload = await self.http.post_json(
+            "/iserver/watchlist",
+            json={"id": "", "name": name, "rows": rows or []},
+        )
+        return Watchlist.model_validate(payload)
 
     def _parse_order_response(self, payload: Any) -> OrderResponseEnvelope:
         if isinstance(payload, list):
@@ -196,4 +410,24 @@ class IBClient:
     async def stream_topic(self, topic: str) -> AsyncIterator[dict[str, Any]]:
         session = await self.tickle()
         async for message in self.websocket.stream(session, topic):
+            yield message
+
+    async def stream_market_data(
+        self, conid: str, fields: list[str] | None = None
+    ) -> AsyncIterator[dict[str, Any]]:
+        request_fields = fields or ["31", "84", "86"]
+        topic = f'smd+{conid}+{{"fields":{request_fields!r}}}'.replace("'", '"')
+        async for message in self.stream_topic(topic):
+            yield message
+
+    async def stream_live_orders(self) -> AsyncIterator[dict[str, Any]]:
+        async for message in self.stream_topic("sor+{}"):
+            yield message
+
+    async def stream_pnl(self) -> AsyncIterator[dict[str, Any]]:
+        async for message in self.stream_topic("spl+{}"):
+            yield message
+
+    async def stream_trades(self) -> AsyncIterator[dict[str, Any]]:
+        async for message in self.stream_topic("str+{}"):
             yield message

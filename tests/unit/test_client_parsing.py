@@ -1,9 +1,8 @@
 from ib_client.client import IBClient
-from ib_client.settings import Settings
 
 
 def test_parse_brokerage_accounts_from_strings() -> None:
-    client = IBClient(Settings())
+    client = IBClient()
 
     parsed = client._parse_brokerage_accounts(["U1234567", "DU7654321"])
 
@@ -11,7 +10,7 @@ def test_parse_brokerage_accounts_from_strings() -> None:
 
 
 def test_parse_brokerage_accounts_from_dicts() -> None:
-    client = IBClient(Settings())
+    client = IBClient()
 
     parsed = client._parse_brokerage_accounts(
         [
