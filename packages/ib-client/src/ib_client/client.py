@@ -10,7 +10,6 @@ from ib_client.exceptions import HTTPRequestError
 from ib_client.http import HTTPClient
 from ib_client.logger import get_logger
 from ib_client.models.account import Account, AccountSummary, Position, ProfitAndLoss
-from ib_client.models.history import HistoricalDataResponse
 from ib_client.models.fx import (
     CurrencyPair,
     ExchangeRate,
@@ -20,6 +19,7 @@ from ib_client.models.fx import (
     FXConversionRequest,
     ResolvedCurrencyPair,
 )
+from ib_client.models.history import HistoricalDataResponse
 from ib_client.models.market import ContractSearchResult, MarketSnapshot
 from ib_client.models.options import (
     ContractRule,
@@ -36,12 +36,12 @@ from ib_client.models.order import (
 )
 from ib_client.models.portfolio import ComboPosition, LedgerEntry
 from ib_client.models.session import AuthenticationStatus, TickleResponse
+from ib_client.models.trading import OrderStatus, ScannerParameters, ScannerResult, Trade, Watchlist
 from ib_client.models.transactions import (
     TransactionHistoryRequest,
     TransactionHistoryResponse,
     TransactionRecord,
 )
-from ib_client.models.trading import OrderStatus, ScannerParameters, ScannerResult, Trade, Watchlist
 from ib_client.settings import Settings, build_settings
 from ib_client.websocket import WebsocketClient
 

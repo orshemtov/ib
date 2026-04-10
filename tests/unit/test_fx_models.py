@@ -1,5 +1,4 @@
 import pytest
-
 from ib_client.client import IBClient
 from ib_client.models.fx import FXConversionRequest, ResolvedCurrencyPair
 

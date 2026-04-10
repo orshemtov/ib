@@ -7,6 +7,7 @@ from typing import Any
 import typer
 from ib_client.auth import AuthWorkflow
 from ib_client.client import IBClient
+from ib_client.exceptions import ConfigurationError, GatewayError
 from ib_client.gateway import GatewayManager
 from ib_client.logger import configure_logging, get_logger
 from ib_client.models.order import OrderRequest
@@ -105,7 +106,11 @@ def auth_status() -> None:
 def auth_login() -> None:
     settings = _settings()
     workflow = _auth_workflow(settings)
-    result = _run(workflow.login())
+    try:
+        result = _run(workflow.login())
+    except (ConfigurationError, GatewayError) as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
     _print_json(result.model_dump(mode="json"))
 
 

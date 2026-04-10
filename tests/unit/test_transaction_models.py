@@ -1,5 +1,4 @@
 import pytest
-
 from ib_client.models.transactions import TransactionHistoryRequest, TransactionHistoryResponse
 
 

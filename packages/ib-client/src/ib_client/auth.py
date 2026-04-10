@@ -5,7 +5,7 @@ import asyncio
 from playwright.async_api import Browser, Page, Playwright, async_playwright
 
 from ib_client.client import IBClient
-from ib_client.exceptions import AuthenticationError
+from ib_client.exceptions import AuthenticationError, ConfigurationError, GatewayError
 from ib_client.gateway import GatewayManager
 from ib_client.logger import get_logger
 from ib_client.models.session import LoginResult
@@ -57,7 +57,15 @@ class AuthWorkflow:
     async def login(self) -> LoginResult:
         gateway_started = False
         if not self.gateway.is_reachable() and self.settings.gateway_dir is not None:
-            self.gateway.start()
+            try:
+                self.gateway.start()
+            except ConfigurationError as exc:
+                raise GatewayError(
+                    f"{exc}\n\n"
+                    "The gateway has not been downloaded yet. Run:\n"
+                    "  uv run ib gateway download\n"
+                    "then retry authentication."
+                ) from exc
             gateway_started = True
             await asyncio.sleep(5)
 

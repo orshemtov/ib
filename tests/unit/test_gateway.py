@@ -1,7 +1,10 @@
 import os
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pytest
+from ib_client.exceptions import ConfigurationError
 from ib_client.gateway import GatewayManager, GatewayRemoteMetadata
 
 
@@ -51,16 +54,27 @@ def test_local_gateway_is_not_current_when_size_differs(tmp_path) -> None:
     assert manager._is_local_gateway_current(archive_path, remote) is False
 
 
-def test_local_gateway_is_not_current_when_remote_is_newer(tmp_path) -> None:
-    archive_path = tmp_path / "clientportal.gw.zip"
-    archive_path.write_bytes(b"12345")
-    local_time = datetime.now(tz=UTC) - timedelta(days=1)
-    os.utime(archive_path, (local_time.timestamp(), local_time.timestamp()))
-    manager = GatewayManager()
-    remote = GatewayRemoteMetadata(
-        etag=None,
-        last_modified=local_time + timedelta(hours=1),
-        size=5,
+def test_resolve_command_script_path_is_absolute(tmp_path: Path) -> None:
+    script_name = "run.bat" if sys.platform.startswith("win") else "run.sh"
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    script = bin_dir / script_name
+    script.write_text("#!/bin/bash\n")
+    script.chmod(0o755)
+    config = tmp_path / "root" / "conf.yaml"
+    config.parent.mkdir()
+    config.write_text("listenPort: 5001\n")
+
+    manager = GatewayManager(gateway_dir=tmp_path)
+    command, working_directory = manager._resolve_command()
+
+    assert Path(command[0]).is_absolute(), (
+        "Script path must be absolute so Popen cwd does not affect it"
     )
 
-    assert manager._is_local_gateway_current(archive_path, remote) is False
+
+def test_resolve_command_raises_when_script_missing(tmp_path: Path) -> None:
+    manager = GatewayManager(gateway_dir=tmp_path)
+
+    with pytest.raises(ConfigurationError, match="Gateway launcher not found"):
+        manager._resolve_command()

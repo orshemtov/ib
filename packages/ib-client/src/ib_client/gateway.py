@@ -93,7 +93,7 @@ class GatewayManager:
         if config_path.is_relative_to(self.settings.gateway_dir):
             config_argument = str(config_path.relative_to(self.settings.gateway_dir))
 
-        return [str(script_path), config_argument], working_directory
+        return [str(script_path.resolve()), config_argument], working_directory
 
     def download_latest(self, beta: bool = False) -> GatewayDownloadResult:
         download_url = BETA_GATEWAY_URL if beta else STANDARD_GATEWAY_URL
